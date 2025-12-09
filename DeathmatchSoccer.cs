@@ -18,7 +18,7 @@ namespace Oxide.Plugins
      * - Goal Swapping Rotation: 2 teams play, losing team's goal is replaced by waiting team's goal
      * - Custom Skins: Each team can have unique skins via Skins.cs plugin
      * - Modern UI: Team selection menu, dynamic scoreboard, role selection
-     * - 2 Roles: Striker (100HP, Thompson) and Goalie (200HP, SPAS-12)
+     * - 4 Roles: Striker, Playmaker, Enforcer, Goalie powered by SoccerWeapons abilities (Home Run, Phase Shift, Magnet, Yellow Card, Medi-Launcher/ESP)
      * - Active Goal System: Only active goals count for scoring
      * 
      * ROTATION SYSTEM:
@@ -116,6 +116,15 @@ namespace Oxide.Plugins
                 GoalieWeaponSkin = 0         // Black goalie spas12
             }}
         };
+
+        private readonly Dictionary<string, string> teamSuits = new Dictionary<string, string>
+        {
+            { "red", "outbreak_scientist" },
+            { "black", "hazmatsuit_scientist_nvgm" },
+            { "blue", "hazmat.krieg" }
+        };
+        private const string DefaultSuitShortname = "hazmatsuit";
+        private static readonly HashSet<string> ValidRoles = new HashSet<string> { "Striker", "Playmaker", "Enforcer", "Goalie" };
         
         private class TeamSkins
         {
@@ -852,12 +861,11 @@ namespace Oxide.Plugins
 
         private void CheckRole(BasePlayer player, string team)
         {
-            int goalies = 0;
-            List<ulong> list = (team == "red") ? redTeam : (team == "blue") ? blueTeam : blackTeam;
-            foreach(ulong id in list) if(playerRoles.ContainsKey(id) && playerRoles[id] == "Goalie") goalies++;
-
-            if(goalies == 0) ShowRoleUI(player, team);
-            else AssignRole(player, "Striker");
+            if (!playerRoles.ContainsKey(player.userID))
+            {
+                AssignRole(player, "Striker");
+            }
+            ShowRoleUI(player, team);
         }
 
         [ConsoleCommand("select_role")]
@@ -911,6 +919,7 @@ namespace Oxide.Plugins
                 player.Teleport(spawn);
             }
             GiveKit(player, role);
+            NotifyRoleAbilities(player, role);
             UpdateScoreUI(player);
         }
 
@@ -1221,32 +1230,66 @@ namespace Oxide.Plugins
             string team = redTeam.Contains(player.userID) ? "red" : 
                          blueTeam.Contains(player.userID) ? "blue" : "black";
             TeamSkins skins = teamSkins[team];
+            string suitShortname = teamSuits.TryGetValue(team, out var suit) && !string.IsNullOrEmpty(suit)
+                ? suit
+                : DefaultSuitShortname;
+
+            void GiveSuit()
+            {
+                var suit = ItemManager.CreateByName(suitShortname, 1);
+                if (suit != null)
+                {
+                    if (!player.inventory.GiveItem(suit, player.inventory.containerWear))
+                    {
+                        suit.Remove();
+                    }
+                }
+            }
+
+            role = string.IsNullOrEmpty(role) ? "Striker" : role;
+            if (!ValidRoles.Contains(role)) role = "Striker";
             
             if (role == "Striker") 
             {
-                // Striker Kit (All positions except Goalie)
-                GiveItemWithSkin(player, "tshirt", 1, skins.TshirtSkin, player.inventory.containerWear);
-                GiveItemWithSkin(player, "pants", 1, skins.PantsSkin, player.inventory.containerWear);
-                GiveItemWithSkin(player, "metal.plate.torso", 1, skins.TorsoSkin, player.inventory.containerWear);
-                GiveItemWithSkin(player, "metal.facemask", 1, skins.FacemaskSkin, player.inventory.containerWear);
-                GiveItemWithSkin(player, "burlap.shoes", 1, skins.ShoesSkin, player.inventory.containerWear);
-                GiveItemWithSkin(player, "smg.thompson", 1, skins.WeaponSkin, player.inventory.containerBelt);
-                player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 5), player.inventory.containerMain);
-                player.inventory.GiveItem(ItemManager.CreateByName("barricade.wood.cover", 3), player.inventory.containerMain);
-                player.inventory.GiveItem(ItemManager.CreateByName("ammo.pistol", 200), player.inventory.containerMain);
+                GiveSuit();
+                GiveItemWithSkin(player, "mace.baseballbat", 1, 0, player.inventory.containerBelt);
+                GiveItemWithSkin(player, "pistol.python", 1, 0, player.inventory.containerBelt);
+                player.inventory.GiveItem(ItemManager.CreateByName("ammo.pistol", 120), player.inventory.containerMain);
+                player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 4), player.inventory.containerMain);
                 player.SetMaxHealth(100); 
                 player.health = 100;
             } 
+            else if (role == "Playmaker")
+            {
+                GiveSuit();
+                GiveItemWithSkin(player, "snowballgun", 1, 0, player.inventory.containerBelt);
+                GiveItemWithSkin(player, "crossbow", 1, 0, player.inventory.containerBelt);
+                player.inventory.GiveItem(ItemManager.CreateByName("snowball", 40), player.inventory.containerMain);
+                player.inventory.GiveItem(ItemManager.CreateByName("arrow.wooden", 30), player.inventory.containerMain);
+                player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 4), player.inventory.containerMain);
+                player.SetMaxHealth(100); 
+                player.health = 100;
+            }
+            else if (role == "Enforcer")
+            {
+                GiveSuit();
+                GiveItemWithSkin(player, "nailgun", 1, 0, player.inventory.containerBelt);
+                GiveItemWithSkin(player, "mace.baseballbat", 1, 0, player.inventory.containerBelt);
+                player.inventory.GiveItem(ItemManager.CreateByName("ammo.nailgun.nails", 200), player.inventory.containerMain);
+                player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 6), player.inventory.containerMain);
+                player.SetMaxHealth(120); 
+                player.health = 120;
+            }
             else // Goalie
             {
-                GiveItemWithSkin(player, "tshirt", 1, skins.TshirtSkin, player.inventory.containerWear);
-                GiveItemWithSkin(player, "heavy.plate.pants", 1, skins.GoaliePantsSkin, player.inventory.containerWear);
-                GiveItemWithSkin(player, "heavy.plate.jacket", 1, skins.GoalieJacketSkin, player.inventory.containerWear);
-                GiveItemWithSkin(player, "metal.facemask", 1, skins.FacemaskSkin, player.inventory.containerWear);
-                GiveItemWithSkin(player, "burlap.shoes", 1, skins.ShoesSkin, player.inventory.containerWear);
+                GiveSuit();
+                GiveItemWithSkin(player, "multiplegrenadelauncher", 1, 0, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "shotgun.spas12", 1, skins.GoalieWeaponSkin, player.inventory.containerBelt);
-                player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 10), player.inventory.containerMain);
+                GiveItemWithSkin(player, "nightvisiongoggles", 1, 0, player.inventory.containerWear);
+                // SoccerWeapons converts 40mm HE launcher rounds into healing shots; keep count low to avoid spam while retaining support utility
+                player.inventory.GiveItem(ItemManager.CreateByName("ammo.grenadelauncher.he", 6), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("ammo.shotgun", 64), player.inventory.containerMain);
+                player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 10), player.inventory.containerMain);
                 player.SetMaxHealth(200); 
                 player.health = 200;
             }
@@ -1298,6 +1341,26 @@ namespace Oxide.Plugins
                     Puts($"[Skins] Final network update sent for {player.displayName}");
                 }
             });
+        }
+
+        private void NotifyRoleAbilities(BasePlayer player, string role)
+        {
+            if (player == null) return;
+            switch (role)
+            {
+                case "Striker":
+                    player.ChatMessage("Role: Striker - Bat (Home Run) + Python (Phase Shift).");
+                    break;
+                case "Playmaker":
+                    player.ChatMessage("Role: Playmaker - Snowball Gun (Magnet) + Crossbow (Whistle).");
+                    break;
+                case "Enforcer":
+                    player.ChatMessage("Role: Enforcer - Nailgun (Yellow Card) + Bat (Home Run).");
+                    break;
+                case "Goalie":
+                    player.ChatMessage("Role: Goalie - MGL (Medi-Launcher heal) + SPAS12 + NVG (ESP).");
+                    break;
+            }
         }
         
         private void GiveItemWithSkin(BasePlayer player, string itemName, int amount, ulong skinId, ItemContainer container)
@@ -1547,8 +1610,10 @@ namespace Oxide.Plugins
             string p = c.Add(new CuiPanel { Image = { Color = "0 0 0 0.9" }, RectTransform = { AnchorMin = "0.3 0.3", AnchorMax = "0.7 0.7" }, CursorEnabled = true }, "Overlay", "RoleSelectUI");
             c.Add(new CuiLabel { Text = { Text = $"CHOOSE ROLE - {config.Name}", FontSize = 18, Align = TextAnchor.MiddleCenter, Color = config.Color + " 1" }, RectTransform = { AnchorMin = "0 0.8", AnchorMax = "1 1" } }, p);
             c.Add(new CuiLabel { Text = { Text = $"({config.Tag})", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 0.6" }, RectTransform = { AnchorMin = "0 0.7", AnchorMax = "1 0.8" } }, p);
-            c.Add(new CuiButton { Button = { Command = "select_role Striker", Color = "0.2 0.6 0.2 1" }, Text = { Text = "STRIKER", FontSize = 16, Align = TextAnchor.MiddleCenter }, RectTransform = { AnchorMin = "0.1 0.2", AnchorMax = "0.45 0.6" } }, p);
-            c.Add(new CuiButton { Button = { Command = "select_role Goalie", Color = "0.8 0.4 0.1 1" }, Text = { Text = "GOALIE", FontSize = 16, Align = TextAnchor.MiddleCenter }, RectTransform = { AnchorMin = "0.55 0.2", AnchorMax = "0.9 0.6" } }, p);
+            c.Add(new CuiButton { Button = { Command = "select_role Striker", Color = "0.2 0.6 0.2 1" }, Text = { Text = "STRIKER\nBat + Phase Shift", FontSize = 14, Align = TextAnchor.MiddleCenter }, RectTransform = { AnchorMin = "0.05 0.45", AnchorMax = "0.45 0.65" } }, p);
+            c.Add(new CuiButton { Button = { Command = "select_role Playmaker", Color = "0.2 0.5 0.8 1" }, Text = { Text = "PLAYMAKER\nMagnet + Whistle", FontSize = 14, Align = TextAnchor.MiddleCenter }, RectTransform = { AnchorMin = "0.55 0.45", AnchorMax = "0.95 0.65" } }, p);
+            c.Add(new CuiButton { Button = { Command = "select_role Enforcer", Color = "0.7 0.3 0.1 1" }, Text = { Text = "ENFORCER\nYellow Card + Bat", FontSize = 14, Align = TextAnchor.MiddleCenter }, RectTransform = { AnchorMin = "0.05 0.2", AnchorMax = "0.45 0.4" } }, p);
+            c.Add(new CuiButton { Button = { Command = "select_role Goalie", Color = "0.6 0.6 0.2 1" }, Text = { Text = "GOALIE\nMedi-Launcher + ESP", FontSize = 14, Align = TextAnchor.MiddleCenter }, RectTransform = { AnchorMin = "0.55 0.2", AnchorMax = "0.95 0.4" } }, p);
             CuiHelper.AddUi(player, c);
         }
 
