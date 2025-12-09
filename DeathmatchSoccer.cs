@@ -1286,7 +1286,7 @@ namespace Oxide.Plugins
                 GiveItemWithSkin(player, "multiplegrenadelauncher", 1, 0, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "shotgun.spas12", 1, skins.GoalieWeaponSkin, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "nightvisiongoggles", 1, 0, player.inventory.containerWear);
-                // SoccerWeapons converts 40mm/HE into healing shots; keep count low to avoid spam while retaining support utility
+                // SoccerWeapons converts 40mm HE launcher rounds into healing shots; keep count low to avoid spam while retaining support utility
                 player.inventory.GiveItem(ItemManager.CreateByName("ammo.grenadelauncher.he", 6), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("ammo.shotgun", 64), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 10), player.inventory.containerMain);
@@ -1358,7 +1358,7 @@ namespace Oxide.Plugins
                     player.ChatMessage("Role: Enforcer - Nailgun (Yellow Card) + Bat (Home Run).");
                     break;
                 case "Goalie":
-                    player.ChatMessage("Role: Goalie - MGL (Medi-Launcher heal) + SPAS12 + ESP goggles.");
+                    player.ChatMessage("Role: Goalie - MGL (Medi-Launcher heal) + SPAS12 + NVG (ESP).");
                     break;
             }
         }
