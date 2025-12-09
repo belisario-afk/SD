@@ -1230,8 +1230,9 @@ namespace Oxide.Plugins
             string team = redTeam.Contains(player.userID) ? "red" : 
                          blueTeam.Contains(player.userID) ? "blue" : "black";
             TeamSkins skins = teamSkins[team];
-            teamSuits.TryGetValue(team, out var suitShortname);
-            if (string.IsNullOrEmpty(suitShortname)) suitShortname = DefaultSuitShortname;
+            string suitShortname = teamSuits.TryGetValue(team, out var suit) && !string.IsNullOrEmpty(suit)
+                ? suit
+                : DefaultSuitShortname;
 
             void GiveSuit()
             {
@@ -1285,6 +1286,7 @@ namespace Oxide.Plugins
                 GiveItemWithSkin(player, "multiplegrenadelauncher", 1, 0, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "shotgun.spas12", 1, skins.GoalieWeaponSkin, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "nightvisiongoggles", 1, 0, player.inventory.containerWear);
+                // Limit HE grenades for goalies to reduce spam while keeping ranged healing utility
                 player.inventory.GiveItem(ItemManager.CreateByName("ammo.grenadelauncher.he", 6), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("ammo.shotgun", 64), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 10), player.inventory.containerMain);
