@@ -917,6 +917,7 @@ namespace Oxide.Plugins
                 player.Teleport(spawn);
             }
             GiveKit(player, role);
+            NotifyRoleAbilities(player, role);
             UpdateScoreUI(player);
         }
 
@@ -1227,7 +1228,8 @@ namespace Oxide.Plugins
             string team = redTeam.Contains(player.userID) ? "red" : 
                          blueTeam.Contains(player.userID) ? "blue" : "black";
             TeamSkins skins = teamSkins[team];
-            string suitShortname = teamSuits.ContainsKey(team) ? teamSuits[team] : "hazmatsuit";
+            teamSuits.TryGetValue(team, out var suitShortname);
+            if (string.IsNullOrEmpty(suitShortname)) suitShortname = "hazmatsuit";
 
             void GiveSuit()
             {
@@ -1242,6 +1244,10 @@ namespace Oxide.Plugins
             }
 
             role = string.IsNullOrEmpty(role) ? "Striker" : role;
+            if (role != "Striker" && role != "Playmaker" && role != "Enforcer" && role != "Goalie")
+            {
+                role = "Striker";
+            }
             
             if (role == "Striker") 
             {
@@ -1280,7 +1286,7 @@ namespace Oxide.Plugins
                 GiveItemWithSkin(player, "multiplegrenadelauncher", 1, 0, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "shotgun.spas12", 1, skins.GoalieWeaponSkin, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "nightvisiongoggles", 1, 0, player.inventory.containerWear);
-                player.inventory.GiveItem(ItemManager.CreateByName("ammo.grenadelauncher.he", 24), player.inventory.containerMain);
+                player.inventory.GiveItem(ItemManager.CreateByName("ammo.grenadelauncher.he", 12), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("ammo.shotgun", 64), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 10), player.inventory.containerMain);
                 player.SetMaxHealth(200); 
@@ -1334,6 +1340,26 @@ namespace Oxide.Plugins
                     Puts($"[Skins] Final network update sent for {player.displayName}");
                 }
             });
+        }
+
+        private void NotifyRoleAbilities(BasePlayer player, string role)
+        {
+            if (player == null) return;
+            switch (role)
+            {
+                case "Striker":
+                    player.ChatMessage("Role: Striker - Bat (Home Run) + Python (Phase Shift).");
+                    break;
+                case "Playmaker":
+                    player.ChatMessage("Role: Playmaker - Snowball Gun (Magnet) + Crossbow (Whistle).");
+                    break;
+                case "Enforcer":
+                    player.ChatMessage("Role: Enforcer - Nailgun (Yellow Card) + Bat (Home Run).");
+                    break;
+                case "Goalie":
+                    player.ChatMessage("Role: Goalie - MGL (Medi-Launcher) + SPAS12 + ESP goggles.");
+                    break;
+            }
         }
         
         private void GiveItemWithSkin(BasePlayer player, string itemName, int amount, ulong skinId, ItemContainer container)
