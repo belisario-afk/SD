@@ -123,6 +123,8 @@ namespace Oxide.Plugins
             { "black", "hazmatsuit_scientist_nvgm" },
             { "blue", "hazmat.krieg" }
         };
+        private const string DefaultSuitShortname = "hazmatsuit";
+        private static readonly HashSet<string> ValidRoles = new HashSet<string> { "Striker", "Playmaker", "Enforcer", "Goalie" };
         
         private class TeamSkins
         {
@@ -1229,7 +1231,7 @@ namespace Oxide.Plugins
                          blueTeam.Contains(player.userID) ? "blue" : "black";
             TeamSkins skins = teamSkins[team];
             teamSuits.TryGetValue(team, out var suitShortname);
-            if (string.IsNullOrEmpty(suitShortname)) suitShortname = "hazmatsuit";
+            if (string.IsNullOrEmpty(suitShortname)) suitShortname = DefaultSuitShortname;
 
             void GiveSuit()
             {
@@ -1244,10 +1246,7 @@ namespace Oxide.Plugins
             }
 
             role = string.IsNullOrEmpty(role) ? "Striker" : role;
-            if (role != "Striker" && role != "Playmaker" && role != "Enforcer" && role != "Goalie")
-            {
-                role = "Striker";
-            }
+            if (!ValidRoles.Contains(role)) role = "Striker";
             
             if (role == "Striker") 
             {
@@ -1286,7 +1285,7 @@ namespace Oxide.Plugins
                 GiveItemWithSkin(player, "multiplegrenadelauncher", 1, 0, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "shotgun.spas12", 1, skins.GoalieWeaponSkin, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "nightvisiongoggles", 1, 0, player.inventory.containerWear);
-                player.inventory.GiveItem(ItemManager.CreateByName("ammo.grenadelauncher.he", 12), player.inventory.containerMain);
+                player.inventory.GiveItem(ItemManager.CreateByName("ammo.grenadelauncher.he", 8), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("ammo.shotgun", 64), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 10), player.inventory.containerMain);
                 player.SetMaxHealth(200); 
