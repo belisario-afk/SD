@@ -18,7 +18,7 @@ namespace Oxide.Plugins
      * - Goal Swapping Rotation: 2 teams play, losing team's goal is replaced by waiting team's goal
      * - Custom Skins: Each team can have unique skins via Skins.cs plugin
      * - Modern UI: Team selection menu, dynamic scoreboard, role selection
-     * - 4 Roles: Striker, Playmaker, Enforcer, Goalie with SoccerWeapons abilities
+     * - 4 Roles: Striker, Playmaker, Enforcer, Goalie powered by SoccerWeapons abilities (Home Run, Phase Shift, Magnet, Yellow Card, Medi-Launcher/ESP)
      * - Active Goal System: Only active goals count for scoring
      * 
      * ROTATION SYSTEM:
@@ -1286,7 +1286,7 @@ namespace Oxide.Plugins
                 GiveItemWithSkin(player, "multiplegrenadelauncher", 1, 0, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "shotgun.spas12", 1, skins.GoalieWeaponSkin, player.inventory.containerBelt);
                 GiveItemWithSkin(player, "nightvisiongoggles", 1, 0, player.inventory.containerWear);
-                // Limit HE grenades for goalies to reduce spam while keeping ranged healing utility
+                // SoccerWeapons converts 40mm/HE into healing shots; keep count low to avoid spam while retaining support utility
                 player.inventory.GiveItem(ItemManager.CreateByName("ammo.grenadelauncher.he", 6), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("ammo.shotgun", 64), player.inventory.containerMain);
                 player.inventory.GiveItem(ItemManager.CreateByName("syringe.medical", 10), player.inventory.containerMain);
@@ -1358,7 +1358,7 @@ namespace Oxide.Plugins
                     player.ChatMessage("Role: Enforcer - Nailgun (Yellow Card) + Bat (Home Run).");
                     break;
                 case "Goalie":
-                    player.ChatMessage("Role: Goalie - MGL (Medi-Launcher) + SPAS12 + ESP goggles.");
+                    player.ChatMessage("Role: Goalie - MGL (Medi-Launcher heal) + SPAS12 + ESP goggles.");
                     break;
             }
         }
